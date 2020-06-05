@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <title>8.2 - Visualization around the globe</title>
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+    </style>
+</head>
+
+<body style="overflow: scroll;">
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <script src="//d3js.org/topojson.v2.min.js"></script>
+
+    <script>
+
+        var width = 1000,
+            height = 900;
+
+        var stateZone = d3.map();
+        var cbsaZone = d3.map();
+
+        var color = d3.scaleOrdinal().domain(["Proactive Remote", "Reactive Remote"])
+            .range(["gold", "crimson"]);
+
+        var msaColor = d3.scaleOrdinal().domain(["Proactive Remote", "Reactive Remote"])
+            .range(["cyan", "brown"]);
+
+        var projection = d3.geoAlbersUsa()
+            .translate([width / 2, height / 2])
+            .scale([1300]);
+
+        var path = d3.geoPath()
+            .projection(projection);
+
+        var graticule = d3.geoGraticule();
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        var g = svg.append('g');
+
+        var promises = [
+            d3.csv("data/data.csv", function (d) {
+                var state = d["State Name"].split(" - ")[1];
+                var cbsa = d["Metropolitan Statistical Area"];
+                var stateReopen = d["State Reopen Status"];
+                var cbsaReopen = d["MSA Reopen Status_Replaced"];
+                stateZone.set(state, stateReopen);
+                cbsaZone.set(cbsa, cbsaReopen);
+            }),
+            d3.json("data/tl_201.json")
+        ]
+
+        Promise.all(promises).then(function (data) {
+            ready(data[1], data[0]);
+        }).catch(function (error) {
+            console.log(error);
+        });
+
+        function ready(world, data) {
+            console.log(world);
+            g.append("g")
+                .attr("class", "states")
+                .selectAll("path")
+                .data(topojson.feature(world, world.objects.tl_2017_us_state).features)
+                .enter().append("path")
+                .style("stroke", "darkmagenta")
+                .style("stroke-width", "1px")
+                .attr("fill", function (d) {
+                    if (stateZone.get(d.properties.NAME) === undefined)
+                        return "green";
+                    return color(stateZone.get(d.properties.NAME));
+                })
+                .attr("d", path);
+
+            g.append("g")
+                .attr("class", "cbsa")
+                .selectAll("path")
+                .data(topojson.feature(world, world.objects.tl_2019_us_cbsa).features)
+                .enter().append("path")
+                .style("stroke", "darkmagenta")
+                .style("stroke-width", "0.5px")
+                .attr("fill", function (d) {
+                    if (cbsaZone.get(d.properties.NAME) === undefined)
+                        return "green";
+                    return msaColor(cbsaZone.get(d.properties.NAME));
+                })
+                .attr("d", path);
+
+
+
+            //border between cbsa
+            // svg.append("path")
+            //     .datum(topojson.mesh(world, world.objects.tl_2019_us_cbsa,function(a, b) { return a !== b; }))
+            //     .attr("class", "boundary")
+            //     .attr("d", path);
+
+            //border between states  
+            // g.append("path")
+            //     .datum(topojson.mesh(world))
+            //     .attr("class", "boundary")
+            //     .attr("d", path);
+
+            g.append("path")
+                .datum(graticule)
+                .attr("class", "graticule")
+                .attr("d", path);
+        }
+
+
+
+        d3.select(self.frameElement).style("height", height + "px");
+
+        var zoom = d3.zoom()
+            .scaleExtent([1, 8])
+            .on('zoom', function () {
+                g.selectAll('path')
+                    .attr('transform', d3.event.transform);
+            });
+
+        svg.call(zoom);
+
+    </script>
+
+</body>
