@@ -29,7 +29,7 @@
             .range(["gold", "crimson"]);
 
         var msaColor = d3.scaleOrdinal().domain(["Proactive Remote", "Reactive Remote"])
-            .range(["cyan", "brown"]);
+            .range(["gold", "crimson"]);
 
         var projection = d3.geoAlbersUsa()
             .translate([width / 2, height / 2])
@@ -64,7 +64,6 @@
         });
 
         function ready(world, data) {
-            console.log(world);
             g.append("g")
                 .attr("class", "states")
                 .selectAll("path")
