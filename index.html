@@ -9,7 +9,22 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
     <style>
-    </style>
+        path:hover {
+            fill: white;
+        }
+        body {
+          text-align: center;
+        }
+        div.tooltip { 
+            position: absolute;     
+            text-align: center;           
+            padding: 2px;       
+            font: 12px sans-serif;    
+            background: #fff; 
+            border: 0px;        
+            pointer-events: none;     
+        }
+      </style>
 </head>
 
 <body style="overflow: scroll;">
@@ -45,6 +60,10 @@
             .attr("height", height);
         var g = svg.append('g');
 
+        var tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
         var promises = [
             d3.csv("data/data.csv", function (d) {
                 var state = d["State Name"].split(" - ")[1];
@@ -64,6 +83,11 @@
         });
 
         function ready(world, data) {
+            g.append("path")
+                .datum(graticule)
+                .attr("class", "graticule")
+                .attr("d", path);
+
             g.append("g")
                 .attr("class", "states")
                 .selectAll("path")
@@ -76,7 +100,20 @@
                         return "green";
                     return color(stateZone.get(d.properties.NAME));
                 })
-                .attr("d", path);
+                .attr("d", path)
+                .on("mouseover", function (d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("State: " + d.properties.NAME)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
 
             g.append("g")
                 .attr("class", "cbsa")
@@ -90,7 +127,20 @@
                         return "green";
                     return msaColor(cbsaZone.get(d.properties.NAME));
                 })
-                .attr("d", path);
+                .attr("d", path)
+                .on("mouseover", function (d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    tooltip.html("MSA:" + (d.properties.NAME).replace(",", "(") + " )")
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
 
 
 
@@ -100,16 +150,6 @@
             //     .attr("class", "boundary")
             //     .attr("d", path);
 
-            //border between states  
-            // g.append("path")
-            //     .datum(topojson.mesh(world))
-            //     .attr("class", "boundary")
-            //     .attr("d", path);
-
-            g.append("path")
-                .datum(graticule)
-                .attr("class", "graticule")
-                .attr("d", path);
         }
 
 
